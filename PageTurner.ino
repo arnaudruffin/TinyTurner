@@ -4,23 +4,28 @@
 
 //thanks https://arduinogetstarted.com/tutorials/arduino-button-long-press-short-press
 
-const int SHORT_PRESS_TIME = 1000; // 1000 milliseconds
-const int LONG_PRESS_TIME = 1000; // 1000 milliseconds
+const int LONG_PRESS_TIME = 600; // 1000 milliseconds
 
-ezButton button(32); // create ezButton object that attach to pin 32;
+ezButton buttonRight(32); // create ezButton object that attach to pin 32;
+ezButton buttonLeft(33);
 
-unsigned long pressedTime = 0;
-unsigned long releasedTime = 0;
-bool isPressing = false;
-bool isLongDetected = false;
+unsigned long pressedTimeRight = 0;
+unsigned long releasedTimeRight = 0;
+bool isPressingRight = false;
+bool isLongDetectedRight = false;
 
+unsigned long pressedTimeLeft = 0;
+unsigned long releasedTimeLeft = 0;
+bool isPressingLeft = false;
+bool isLongDetectedLeft = false;
 
 BleKeyboard bleKeyboard("Tiny Turner", "Arnaud R.", 100);
 void setup() {
   Serial.begin(115200);
 
-  //configure debounce
-  button.setDebounceTime(50); // set debounce time to 50 milliseconds
+  // set debounce time to 50 milliseconds
+  buttonRight.setDebounceTime(50);
+  buttonLeft.setDebounceTime(50);
 
   //starting BLE broadcasting
   Serial.println("Starting BLE work!");
@@ -30,36 +35,68 @@ void setup() {
 void loop() {
   if (bleKeyboard.isConnected()) {
 
-    button.loop(); // MUST call the loop() function first
+    buttonRight.loop(); // MUST call the loop() function first
+    buttonLeft.loop(); // MUST call the loop() function first
 
-    if (button.isPressed()) {
-      pressedTime = millis();
-      isPressing = true;
-      isLongDetected = false;
+    if (buttonRight.isPressed()) {
+      pressedTimeRight = millis();
+      isPressingRight = true;
+      isLongDetectedRight = false;
+    }
+    if (buttonLeft.isPressed()) {
+      pressedTimeLeft = millis();
+      isPressingLeft = true;
+      isLongDetectedLeft = false;
     }
 
-    if (button.isReleased()) {
-      isPressing = false;
-      releasedTime = millis();
+    if (buttonRight.isReleased()) {
+      isPressingRight = false;
+      releasedTimeRight = millis();
 
-      long pressDuration = releasedTime - pressedTime;
+      long pressDurationRight = releasedTimeRight - pressedTimeRight;
 
-      if (pressDuration < SHORT_PRESS_TIME)
-        Serial.println("A short press is detected");
-      bleKeyboard.write(KEY_RIGHT_ARROW);
-      bleKeyboard.releaseAll();
-    }
-
-    if (isPressing == true && isLongDetected == false) {
-      long pressDuration = millis() - pressedTime;
-
-      if (pressDuration > LONG_PRESS_TIME) {
-        Serial.println("A long press is detected");
-        bleKeyboard.write(KEY_DOWN_ARROW);
+      if (pressDurationRight < LONG_PRESS_TIME) {
+        Serial.println("A short press is detected on Right");
+        bleKeyboard.write(KEY_RIGHT_ARROW);
         bleKeyboard.releaseAll();
-        isLongDetected = true;
+      }
+    }
+    if (buttonLeft.isReleased()) {
+      isPressingLeft = false;
+      releasedTimeLeft = millis();
+
+      long pressDurationLeft = releasedTimeLeft - pressedTimeLeft;
+
+      if (pressDurationLeft < LONG_PRESS_TIME) {
+        Serial.println("A short press is detected on Left");
+        bleKeyboard.write(KEY_LEFT_ARROW);
+        bleKeyboard.releaseAll();
       }
     }
 
+    if (isPressingRight == true && isLongDetectedRight == false) {
+      long pressDurationRight = millis() - pressedTimeRight;
+
+      if (pressDurationRight > LONG_PRESS_TIME) {
+        Serial.println("A long press is detected on Right");
+        bleKeyboard.write(KEY_DOWN_ARROW);
+        bleKeyboard.releaseAll();
+        isLongDetectedRight = true;
+      }
+    }
+
+    if (isPressingLeft == true && isLongDetectedLeft == false) {
+      long pressDurationLeft = millis() - pressedTimeLeft;
+
+      if (pressDurationLeft > LONG_PRESS_TIME) {
+        Serial.println("A long press is detected on Left");
+        bleKeyboard.write(KEY_UP_ARROW);
+        bleKeyboard.releaseAll();
+        isLongDetectedLeft = true;
+      }
+    }
+    // handleButton(buttonRight, KEY_RIGHT_ARROW, KEY_DOWN_ARROW,pressedTimeRight, releasedTimeRight,isPressingRight,isLongDetectedRight);
+    // handleButton(buttonLeft, KEY_LEFT_ARROW, KEY_UP_ARROW,pressedTimeLeft, releasedTimeLeft,isPressingLeft,isLongDetectedLeft);
   }
+
 }
